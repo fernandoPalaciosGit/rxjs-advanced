@@ -1,7 +1,8 @@
-advanced
-Observables
+- https://frontendmasters.com/courses/advanced-async-js/
+
+#### Observables
 Es una clase que define un `function suscriptor` como proceso asincrono (http, timeout, websocket)
-Define una unica interfaz, que es `subscribe()`, donde se pasara por parametro el objeto de observer
+Define una única interfaz, que es `subscribe()`, donde se pasara por parametro el objeto de observer
 El `observer` es un mapa de callback (success, error, complete), asociados a la resolucion del suscriptor
 
 ```typescript
