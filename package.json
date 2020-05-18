@@ -1,0 +1,15 @@
+{
+  "name": "rxjs-advanced",
+  "version": "1.0.0",
+  "description": "rxjs,observables",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fernando Palacios Landi",
+  "license": "ISC",
+  "dependencies": {
+    "rxjs": "^6.5.5",
+    "typescript": "^3.9.2"
+  }
+}
