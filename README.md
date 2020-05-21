@@ -57,8 +57,8 @@ export class Observable {
     }
 }
 
-Observable.fromEvent($dom, 'click')
-    .subscribe(() => console.log('launch event listener'));
+const clicks$ = Observable.fromEvent(document.getElementById('#id'), 'click');
+clicks$.subscribe(() => console.log('on click fires'));
 ```
 
 #### Subjects
@@ -75,3 +75,39 @@ por ejemplo cualquier observable de event listeners de acciones de usuario.
 
 ##### LAZY EVALUATION
 Un Observable puede encadenar varios uscriptores de Observers y no evaluarse hasta que nos suscribimos al final de la cola (hasta que no llamamos al subscribe)
+
+
+#### MAP --> transform observer results
+```typescript
+export class Observable {
+    constructor(private readonly subscriptor) {
+        this.subscriptor = subscriptor;
+    }
+
+    subscribe(observer) {
+        this.subscriptor(observer);
+    }
+
+    map(iterator) {
+        const lastObserver = this;
+        return new Observable(function subscriptor(observer) {
+            const lastSubscription = lastObserver.subscribe({
+                next: (result) => {
+                    observer.next(iterator(result));
+                },
+                error: (err) => {
+                    observer.error(err);
+                }
+            });
+            return {
+                unsubscribe() {
+                    lastSubscription.unsubscribe();
+                }
+            };
+        });
+    }
+}
+
+Observable.fromEvent(document.getElementById('#id'), 'keypress').map(({keyup}) => keyup)
+    .subscribe((keyup) => console.log(`keyboard value: ${keyup}`));
+```
