@@ -221,3 +221,14 @@ lo mismo que el concatMap pero se resuelve el suscriptor que menos tarde en proc
  {...2...4}.merge(
  {.1...5}) -->
  {.1.2.5.4} // se resuelven a medida que acaban de resolverse
+
+
+##### switchLatest
+se trata de interrumpir la resolucnion de un suscriptor que aun no se ha resuelto si llega un nuevo suscriptor resulto, es decir el primer valor que se resuelve, anula el suscriptor anterior, es un mergeMap pero que cancela la cadena de suscriptores anterior
+
+....{1....5..5}
+.......{.1..2.....5...3}
+...........{1...9.......9}.switchLatest()
+....{1...1..1...9.......9}
+
+Es el operador de Observables que mas se utiliza en entornos graficos, porque es como funciona la interaccion de usuarios, es decir, la ultima accion deroga la anterior
