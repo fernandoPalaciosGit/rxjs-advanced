@@ -197,3 +197,27 @@ export class Observable {
     }
 }
 ```
+
+##### distincUntilChange
+procesa los valores del stream dejando pasar solo un valor distinto al anterior
+{..1....5..5..45...2..2}.distinctUntilChange() ->
+{..1....5.....45...2...}
+
+
+##### scan
+version del Array.prototype.reduce un stream de Observers.
+La diferencia es que el valor es acumulado en cada iteracion del stream
+[1, 2, 3].reduce((acc, next) => acc + next) === [6]
+{...1..2.....3}.scan((acc, next) => acc + next) === {...1..3.....6} 
+
+Se utiliza para trackear la secuencia de valores en el stream
+
+##### merge map
+lo mismo que el concatMap pero se resuelve el suscriptor que menos tarde en procesar
+ {...2...4}.concat(
+ {.1...5}) -->
+ {.1...5...2...4} // se respetan los tiempos de resolución de cada suscriptor
+ 
+ {...2...4}.merge(
+ {.1...5}) -->
+ {.1.2.5.4} // se resuelven a medida que acaban de resolverse
