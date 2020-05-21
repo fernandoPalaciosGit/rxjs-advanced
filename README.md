@@ -152,3 +152,48 @@ Observable.fromEvent(document.getElementById('#id'), 'keypress')
     .filter((keyValue) => keyValue > 10)
     .subscribe((keyup) => console.log(`keyboard value: ${keyup}`));
 ```
+
+##### Concat: se trata secuenciar una lista de observers, respetando los tiemps de ejecucion
+```typescript
+export class Observable {
+    constructor(private readonly subscriptor) {
+        this.subscriptor = subscriptor;
+    }
+
+    subscribe(observer) {
+        this.subscriptor(observer);
+    }
+
+    concat(...observables) {
+        return new Observable(function subscriptor(observer) {
+            const myObservables = [...observables]; // deep copy, to avoid race conditions, if this concat(...observables) execute multiple times
+            let mySuscriptor = null;
+            const processListObservables = () => {
+                if (myObservables.length === 0) {
+                    observer.complete();
+                } else {
+                    let nextObservable = myObservables.shift();
+                    const mySuscriptor = nextObservable.subscribe({
+                        next(result) {
+                            observer.next(result);
+                        },
+                        error(error) {
+                            observer.error(error);
+                            mySuscriptor.unsubscribe();
+                        },
+                        complete() {
+                            processListObservables(); // recursive subscriptions
+                        }
+                    });
+                }
+            };
+            processListObservables(); // subscribe first observable
+            return {
+                unsubscribe() {
+                    mySuscriptor.unsubscribe(); // deprecates last subscription in actual observer iteration
+                }
+            };
+        });
+    }
+}
+```
