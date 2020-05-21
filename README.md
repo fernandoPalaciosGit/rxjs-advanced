@@ -77,7 +77,7 @@ por ejemplo cualquier observable de event listeners de acciones de usuario.
 Un Observable puede encadenar varios uscriptores de Observers y no evaluarse hasta que nos suscribimos al final de la cola (hasta que no llamamos al subscribe)
 
 
-#### MAP --> transform observer results
+#### MAP --> transform the value to the next subscriptor
 ```typescript
 export class Observable {
     constructor(private readonly subscriptor) {
@@ -87,6 +87,8 @@ export class Observable {
     subscribe(observer) {
         this.subscriptor(observer);
     }
+
+    static fromEvent(domEl: HTMLElement, eventName) { /***/ }
 
     map(iterator) {
         const lastObserver = this;
@@ -109,5 +111,44 @@ export class Observable {
 }
 
 Observable.fromEvent(document.getElementById('#id'), 'keypress').map(({keyup}) => keyup)
+    .subscribe((keyup) => console.log(`keyboard value: ${keyup}`));
+```
+
+#### FILTER --> pass value to next subscriptor if agree the iterator
+```typescript
+export class Observable {
+    constructor(private readonly subscriptor) {
+        this.subscriptor = subscriptor;
+    }
+
+    subscribe(observer) {
+        this.subscriptor(observer);
+    }
+
+    static fromEvent(domEl: HTMLElement, eventName) { /***/ }
+
+    filter(iterator) {
+        const lastObserver = this;
+        return new Observable(function subscriptor(observer) {
+            const lastSubscriptor = lastObserver.subscribe({
+                next(result){
+                    if (iterator(result)) {
+                        observer.next(result);
+                    }
+                }
+            });
+
+            return {
+                unsubscribe() {
+                    lastSubscriptor.unsubscribe();
+                }
+            }
+        });
+    }
+}
+
+Observable.fromEvent(document.getElementById('#id'), 'keypress')
+    .map(({keyup}) => keyup)
+    .filter((keyValue) => keyValue > 10)
     .subscribe((keyup) => console.log(`keyboard value: ${keyup}`));
 ```
