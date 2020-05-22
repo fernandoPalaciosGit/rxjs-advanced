@@ -14,9 +14,23 @@ const animationsAllowed$ = {
     .....false....................true.....false........true
 }
 */
-import { of } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, map, mergeMap, scan } from 'rxjs/operators';
+import { concat, empty, of } from 'rxjs';
+import { webSocket } from 'rxjs/webSocket';
 
 let isAllowAnimations = false; // use globally for Animations Components
-const animationsAllowed$ = of(false);
-
-animationsAllowed$.subscribe((flag) => isAllowAnimations = flag)
+const priorityTasks$ = webSocket<number>('https://sync_to_server');
+const animationsAllowed$ = priorityTasks$.pipe(
+    mergeMap((result) =>
+        concat(
+            of(1), // marcamos el nuevo stream con un flag --> la tarea empieza
+            filter(() => false), // eliminamos los resultados del stream --> stream vacio
+            of(-1) // la tarea acaba
+        )
+    ),
+    catchError(() => empty()),
+    scan((acc, curr: number) => acc + curr, 0),
+    map((val) => val === 0),
+    distinctUntilChanged()
+);
+animationsAllowed$.subscribe((flag) => isAllowAnimations = flag);
