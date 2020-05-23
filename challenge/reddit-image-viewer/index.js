@@ -1,5 +1,5 @@
 const { of, fromEvent, merge } = rxjs;
-const { switchMap, tap } = rxjs.operators;
+const { switchMap, tap, map, scan } = rxjs.operators;
 const { fromFetch } = rxjs.fetch;
 const nextButton = document.getElementById('next');
 const backButton = document.getElementById('back');
@@ -19,22 +19,40 @@ function getSubImages(sub) {
 
         return fromFetch(url).pipe(
             switchMap((response) => response.json()),
+            map((data) => data.data.children.map(image => image.data.url)),
             tap((images) => localStorage.setItem(sub, JSON.stringify(images)))
         );
     }
 }
 
 // ---------------------- INSERT CODE  HERE ---------------------------
-const stubSelection$ = fromEvent(subSelect, 'change').pipe(
-    switchMap(({ currentTarget }) => getSubImages(currentTarget.value))
+const stubSelection$ = merge(
+    of(subSelect.value), // stub has an init selected even we do not select any one with the control
+    fromEvent(subSelect, 'change').pipe(map(({ currentTarget }) => currentTarget.value))
 );
 const backImagesSelection$ = fromEvent(backButton, 'click');
 const forwardImagesSelection$ = fromEvent(nextButton, 'click');
 // This "images" Observable is a dummy. Replace it with a stream of each
 // image in the current sub which is navigated by the user.
-const images = of('https://upload.wikimedia.org/wikipedia/commons/3/36/Hopetoun_falls.jpg');
 
-images.subscribe({
+const offsets$ = merge(
+    backImagesSelection$.pipe(map(() => -1)),
+    forwardImagesSelection$.pipe(map(() => 1))
+);
+
+const imageIndex$ = merge(
+    of(0), // initialize thhe index (sino selectImages$ NO emitiré imagen seleccionada añ principio, sin seleccionar un next/forward)
+    offsets$.pipe(scan((acc, next) => acc + next, 0))
+);
+
+const selectImages$ = stubSelection$.pipe(
+    switchMap((stub) => getSubImages(stub)),
+    switchMap((images) => {
+        return imageIndex$.pipe(map((index) => images[index]));
+    })
+);
+
+selectImages$.subscribe({
     next(url) {
         // hide the loading image
         loading.style.visibility = 'hidden';
@@ -50,10 +68,10 @@ images.subscribe({
 // This "actions" Observable is a placeholder. Replace it with an
 // observable that notifies whenever a user performs an action,
 // like changing the sub or navigating the images
-const actions = merge(
+const actions$ = merge(
     stubSelection$,
     backImagesSelection$,
     forwardImagesSelection$
 );
 
-actions.subscribe(() => loading.style.visibility = 'visible');
+actions$.subscribe(() => loading.style.visibility = 'visible');
