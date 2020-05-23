@@ -67,6 +67,51 @@ Entonces la instancia de un observable no tiene ninguna repercusion en el progra
 esto puede provocar sideeffects si no se controla en memoria la cantidad de observables que se acumulan, todo lo contrario a otras API que permiten controlar tambien programas asincronos como la Promise, porque la amisma instancia ejecunjta el programa asincrono (en el mismo hilo de ejecucion que este corriendo), indepèndientemente que asociemos o no una suscripcion de success (then) o fail (catch)
 Para evitar estos posibles sideeffects con los obnservables, tenemos los Subjects
 
+hereda de un Observable
+Sirva para crear un broadcast de valores
+Ejemplo queremos una unica fuente de datos al que se puedan suscribir varios Observables
+Es un mecaanismo de multicasting/broadcast a varios observables que se suscriben
+Es como un repositorio de multiples observers, y cuando se quiera resolver el valor, se hace push a todos los consumers.
+
+Ejemplos de interfaces en ngrx: `share()`, `replay()`, lo que provocan es que a medida que haya mas suscriptores, todos compartiran la misma fuente del observable a todos los consumers a traves de un efecto bradcast.
+
+```typescript
+class Subject extends rxjs.Observable {
+    observers = new Set();
+
+    constructor() {
+        super(function subscribe(observer) {
+            const self = this;
+            self.observers.add(observer);
+
+            return {
+                unsubscribe() {
+                    self.observers.delete(observer);
+                }
+            };
+        });
+    }
+
+    next(result) {
+        for (const observer of [...this.observers]) {
+            observer.next(result);
+        }
+    }
+
+    error(err) {
+        for (const observer of [...this.observers]) {
+            observer.error(err);
+        }
+    }
+
+    complete() {
+        for (const observer of [...this.observers]) {
+            observer.next();
+        }
+    }
+}
+```
+
 ##### HOT Observables, COLD Observables
 COLD Observables: son observabels estaticos, como los pure pipes (directivas de Angular), simepre que te suscribes, obtienes el mismo resultado.
 
