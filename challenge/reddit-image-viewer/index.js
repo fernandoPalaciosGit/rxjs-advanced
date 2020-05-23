@@ -1,5 +1,5 @@
 const { of, fromEvent, merge } = rxjs;
-const { switchMap, tap, map, scan } = rxjs.operators;
+const { switchMap, tap, map, scan, filter } = rxjs.operators;
 const { fromFetch } = rxjs.fetch;
 const nextButton = document.getElementById('next');
 const backButton = document.getElementById('back');
@@ -41,8 +41,8 @@ const offsets$ = merge(
 );
 
 const imageIndex$ = merge(
-    of(0), // initialize thhe index (sino selectImages$ NO emitiré imagen seleccionada añ principio, sin seleccionar un next/forward)
-    offsets$.pipe(scan((acc, next) => acc + next, 0))
+    of(0), // initialize the index (sino selectImages$ NO emitiré imagen seleccionada añ principio, sin seleccionar un next/forward)
+    offsets$.pipe(scan((index, offset) => index + offset, 0))
 );
 
 // en vez de asignar  un recurso al DOM img, vamos a precargar la imagen para que nos permita controlar los eventos de success y error, en caso de que estemos proporcionando un recurso invalido a la imagen
@@ -55,13 +55,29 @@ const preloadImage = (src) => {
     return merge(loadedImage$, failedImage$);
 };
 
+const getSubUrl = (images) => {
+    return imageIndex$.pipe(
+        filter((index) => index >= 0 && index < images.length),
+        map((index) => images[index])
+    );
+};
+
 const selectImages$ = stubSelection$.pipe(
     switchMap((stub) => getSubImages(stub)),
-    switchMap((images) => {
-        return imageIndex$.pipe(map((index) => images[index]));
-    }),
+    switchMap((images) => getSubUrl(images)),
     switchMap((url) => preloadImage(url))
 );
+
+// This "actions" Observable is a placeholder. Replace it with an
+// observable that notifies whenever a user performs an action,
+// like changing the sub or navigating the images
+const actions$ = merge(
+    stubSelection$,
+    backImagesSelection$,
+    forwardImagesSelection$
+);
+
+actions$.subscribe(() => loading.style.visibility = 'visible');
 
 selectImages$.subscribe({
     next(url) {
@@ -75,14 +91,3 @@ selectImages$.subscribe({
         alert('I\'m having trouble loading the images for that sub. Please wait a while, reload, and then try again later.');
     }
 });
-
-// This "actions" Observable is a placeholder. Replace it with an
-// observable that notifies whenever a user performs an action,
-// like changing the sub or navigating the images
-const actions$ = merge(
-    stubSelection$,
-    backImagesSelection$,
-    forwardImagesSelection$
-);
-
-actions$.subscribe(() => loading.style.visibility = 'visible');
