@@ -45,11 +45,22 @@ const imageIndex$ = merge(
     offsets$.pipe(scan((acc, next) => acc + next, 0))
 );
 
+// en vez de asignar  un recurso al DOM img, vamos a precargar la imagen para que nos permita controlar los eventos de success y error, en caso de que estemos proporcionando un recurso invalido a la imagen
+const preloadImage = (src) => {
+    const newImage = new Image();
+    const loadedImage$ = fromEvent(newImage, 'load').pipe(map(() => src));
+    const failedImage$ = fromEvent(newImage, 'error').pipe(map(() => LOADING_ERROR_URL));
+
+    newImage.src = src;
+    return merge(loadedImage$, failedImage$);
+};
+
 const selectImages$ = stubSelection$.pipe(
     switchMap((stub) => getSubImages(stub)),
     switchMap((images) => {
         return imageIndex$.pipe(map((index) => images[index]));
-    })
+    }),
+    switchMap((url) => preloadImage(url))
 );
 
 selectImages$.subscribe({
